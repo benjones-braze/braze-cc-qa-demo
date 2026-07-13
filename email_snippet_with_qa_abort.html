@@ -1,0 +1,45 @@
+{# ============================================================= #}
+{# Connected Content QA-Abort snippet — demo                      #}
+{# URL is pre-filled to benjones-braze/braze-cc-qa-demo.          #}
+{# Point at mock_aem_full.json for Scenario A (pass),             #}
+{# then mock_aem_partial.json for Scenario B (abort).            #}
+{# ============================================================= #}
+
+{% connected_content https://raw.githubusercontent.com/benjones-braze/braze-cc-qa-demo/main/mock_aem_full.json?first_name={{${first_name}}} :save aem_response :rerender %}
+
+{% assign expected_product_count = 6 %}
+{% assign actual_product_count = aem_response.products.size %}
+
+{% if aem_response.products == nil or actual_product_count < expected_product_count %}
+  {% abort_message('AEM returned incomplete product data - fewer than 6 products') %}
+{% endif %}
+
+<!-- ---------- Body renders only if the abort above did NOT fire ---------- -->
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:600px;margin:0 auto;font-family:Arial,Helvetica,sans-serif;">
+  <tr>
+    <td style="padding:24px 16px 8px;font-size:20px;font-weight:bold;">
+      {{aem_response.greeting}}
+    </td>
+  </tr>
+  <tr>
+    <td style="padding:0 16px 16px;">
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+        {% for product in aem_response.products %}
+        <tr>
+          <td width="120" style="padding:8px 0;vertical-align:top;">
+            <a href="{{product.product_url}}">
+              <img src="{{product.image_url}}" alt="{{product.name}}" width="100" style="display:block;border:0;">
+            </a>
+          </td>
+          <td style="padding:8px 0 8px 12px;vertical-align:top;">
+            <a href="{{product.product_url}}" style="text-decoration:none;color:#111;">
+              <div style="font-size:15px;font-weight:bold;">{{product.name}}</div>
+            </a>
+            <div style="font-size:14px;color:#555;margin-top:4px;">{{product.price}}</div>
+          </td>
+        </tr>
+        {% endfor %}
+      </table>
+    </td>
+  </tr>
+</table>

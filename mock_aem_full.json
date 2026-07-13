@@ -1,0 +1,50 @@
+{
+  "market": "sv_SE",
+  "campaign": "qa_abort_demo",
+  "expected_product_count": 6,
+  "greeting": "Hi ${first_name}, here's what's new for you",
+  "products": [
+    {
+      "id": "P001",
+      "name": "Relaxed Fit T-Shirt",
+      "price": "199 kr",
+      "image_url": "https://raw.githubusercontent.com/benjones-braze/braze-cc-qa-demo/main/images/P001.jpg",
+      "product_url": "https://example.com/products/P001"
+    },
+    {
+      "id": "P002",
+      "name": "Linen Blend Shirt",
+      "price": "349 kr",
+      "image_url": "https://raw.githubusercontent.com/benjones-braze/braze-cc-qa-demo/main/images/P002.jpg",
+      "product_url": "https://example.com/products/P002"
+    },
+    {
+      "id": "P003",
+      "name": "Wide Leg Trousers",
+      "price": "499 kr",
+      "image_url": "https://raw.githubusercontent.com/benjones-braze/braze-cc-qa-demo/main/images/P003.jpg",
+      "product_url": "https://example.com/products/P003"
+    },
+    {
+      "id": "P004",
+      "name": "Denim Jacket",
+      "price": "699 kr",
+      "image_url": "https://raw.githubusercontent.com/benjones-braze/braze-cc-qa-demo/main/images/P004.jpg",
+      "product_url": "https://example.com/products/P004"
+    },
+    {
+      "id": "P005",
+      "name": "Canvas Tote Bag",
+      "price": "149 kr",
+      "image_url": "https://raw.githubusercontent.com/benjones-braze/braze-cc-qa-demo/main/images/P005.jpg",
+      "product_url": "https://example.com/products/P005"
+    },
+    {
+      "id": "P006",
+      "name": "Summer Sandals",
+      "price": "299 kr",
+      "image_url": "https://raw.githubusercontent.com/benjones-braze/braze-cc-qa-demo/main/images/P006.jpg",
+      "product_url": "https://example.com/products/P006"
+    }
+  ]
+}

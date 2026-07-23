@@ -1,0 +1,24 @@
+{# ============================================================= #}
+{# Connected Content — HTML response variant                      #}
+{# CC returns a full HTML block (header + products + footer),      #}
+{# not JSON. Braze injects the raw HTML into the message.          #}
+{#                                                                 #}
+{# Point at product_block_6.html for Scenario A (6 products),      #}
+{# then product_block_4.html for Scenario B (4 products).          #}
+{# ============================================================= #}
+
+{% connected_content https://raw.githubusercontent.com/benjones-braze/braze-cc-qa-demo/main/product_block_6.html :save cc_html %}
+
+{# ---------- Optional crude Liquid guardrail (count-level only) ---------- #}
+{# HTML has no structured .products array, so we count how many times the   #}
+{# per-product marker appears. This is the ONLY check Liquid can do on an    #}
+{# HTML blob — it cannot tell if a card is present-but-broken.               #}
+{% assign expected_product_count = 6 %}
+{% assign actual_product_count = cc_html | split: 'data-product="' | size | minus: 1 %}
+
+{% if actual_product_count < expected_product_count %}
+  {% abort_message('CC HTML returned incomplete product data — {{actual_product_count}} of {{expected_product_count}} products') %}
+{% endif %}
+
+{# ---------- Body renders only if the abort above did NOT fire ---------- #}
+{{cc_html}}

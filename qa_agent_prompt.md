@@ -19,56 +19,76 @@ product recommendation section is complete and fully rendered, and to return a
 strict verdict. You do not rewrite or fix the email — you only inspect and report.
 ```
 
-## Configurable inputs
+## The one input YOU set
 
 ```
-EXPECTED_PRODUCT_COUNT = 6      # change per campaign (e.g. 2, 4, 6)
-MIN_PRODUCT_COUNT      = 6      # minimum to allow send; often == expected
-REQUIRED_FIELDS        = [image, name, price, product_link]
+EXPECTED_PRODUCT_COUNT = 6      # the number you expect. Change per campaign (2, 4, 6, …)
+```
+
+Everything else is fixed:
+
+```
+REQUIRED_FIELDS = [image, name, price, product_link]   # what makes a card "complete"
 ```
 
 ## Task prompt
 
 ```
-Inspect the email HTML below.
+You will be given EXPECTED_PRODUCT_COUNT (a number) and the fully rendered HTML
+of one email. Read and understand the HTML — do not just string-match.
 
-1. COUNT the product cards in the recommendations section. A product card is
-   each element carrying a data-product="..." attribute (fallback: each block
+1. Identify each product in the recommendations section and COUNT them. A product
+   is each element carrying a data-product="..." attribute (fallback: each block
    that has a product image + a product name + a price together).
 
-2. For EACH card, verify every REQUIRED_FIELD is present and non-empty:
-   - image      : an <img> with a non-empty src that is an absolute https URL
-   - name       : visible product name text, not blank and not a placeholder
-                  (e.g. not "{{...}}", "null", "undefined", "PRODUCT_NAME")
-   - price      : a visible price value, not blank / not a placeholder
-   - product_link: an <a href="..."> wrapping the card with a non-empty https URL
+2. For EACH product, verify every REQUIRED_FIELD is present and non-empty:
+   - image        : an <img> with a non-empty absolute https src
+   - name         : visible name text, not blank and not a placeholder
+                    (not "{{...}}", "${...}", "null", "undefined", "PRODUCT_NAME")
+   - price        : a visible price value, not blank / not a placeholder
+   - product_link : an <a href="..."> with a non-empty https URL
 
-3. Flag a card as BROKEN if any required field is missing, empty, or still a
-   template placeholder / unresolved Liquid or ${...} token.
+3. A product only counts as COMPLETE if all REQUIRED_FIELDS are good. Otherwise
+   list it under "issues".
 
-4. Compare the count of FULLY RENDERED cards against MIN_PRODUCT_COUNT.
+4. Compare the number of COMPLETE products against EXPECTED_PRODUCT_COUNT and
+   decide the status:
+     - "match"     : complete count == expected, nothing broken
+     - "missing"   : complete count  < expected (too few, or some are broken)
+     - "over"      : complete count  > expected (more than expected)
 
 Return ONLY this JSON, nothing else:
 
 {
-  "expected": <MIN_PRODUCT_COUNT>,
-  "found_cards": <int>,
-  "fully_rendered": <int>,
-  "broken": [ { "position": <int>, "product_id": "<data-product or ''>", "missing": ["field", ...] } ],
-  "pass": <true if fully_rendered >= MIN_PRODUCT_COUNT and broken is empty, else false>,
+  "status": "match" | "missing" | "over",
+  "expected": <EXPECTED_PRODUCT_COUNT>,
+  "products_found": <int>,        // how many product blocks exist
+  "products_complete": <int>,     // how many are fully rendered
+  "confidence": <0.0-1.0>,        // how sure you are of this reading
+  "issues": [
+    { "position": <int>, "product_id": "<data-product or ''>", "missing": ["field", ...] }
+  ],
   "reason": "<one short sentence>"
 }
 ```
 
-## Expected results against the sample files
+## What the output means (how you'll use it downstream)
 
-| File | found_cards | fully_rendered | MIN=6 → pass? |
-|------|-------------|----------------|---------------|
-| `product_block_6.html` | 6 | 6 | ✅ true |
-| `product_block_4.html` | 4 | 4 | ❌ false ("only 4 of 6 products") |
+- `status` → the branch key. `"match"` = safe to send; `"missing"`/`"over"` = hold/alert.
+- `products_found` → the actual count the agent read from the HTML.
+- `confidence` → how sure the agent is. Treat a low score (say `< 0.8`) as
+  "don't trust the auto-decision — route to a human," even if `status == "match"`.
+- `issues` → per-product detail for the alert message / debugging.
 
-Set `MIN_PRODUCT_COUNT = 2` and `product_block_4.html` passes — that's the
-configurable threshold in action.
+## Expected results against the sample files (EXPECTED = 6)
+
+| File | products_found | products_complete | status |
+|------|----------------|-------------------|--------|
+| `product_block_6.html` | 6 | 6 | ✅ `match` |
+| `product_block_4.html` | 4 | 4 | ❌ `missing` ("only 4 of 6 products") |
+
+Set `EXPECTED_PRODUCT_COUNT = 2` and `product_block_4.html` returns `over`
+(4 > 2) — the same input driving a different verdict.
 
 ## How to wire it into Braze
 
@@ -77,5 +97,6 @@ configurable threshold in action.
 - **Feed the agent the rendered HTML**, not the template. Use the message
   preview / rendered output so Liquid and Connected Content are already resolved
   — otherwise the agent just sees `{{cc_html}}` and can't judge anything.
-- On `pass:false`, route to a "hold / alert" path (e.g. notify a Slack channel,
-  skip the send, or fall back to a static block) instead of mailing the gap.
+- Branch on `status`: `"match"` → send; `"missing"`/`"over"` → hold / alert
+  (notify Slack, skip the send, or fall back to a static block) instead of
+  mailing the gap. Optionally also gate on `confidence` — low confidence → human review.
